@@ -3,6 +3,7 @@ package su.zencode.neuronicer;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -17,7 +18,9 @@ import java.io.InputStream;
 public class MainActivity extends AppCompatActivity {
 
     private final int loadImage = 1;
+    private static final int BITMAP_TARGET_DIMENSION = 28;
     private ImageView imageView;
+    Bitmap bitmapToCrop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,9 +39,18 @@ public class MainActivity extends AppCompatActivity {
 
                 startActivityForResult(loadImageIntent,loadImage);
             }
-        }
+        });
 
-        );
+        Button cropImageButton = (Button) findViewById(R.id.crop_button);
+        cropImageButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //int dimension = getSquareCropDimensionForBitmap(bitmapToCrop);
+                bitmapToCrop = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
+                imageView.setImageBitmap(bitmapToCrop);
+            }
+        });
+
 
     }
 
@@ -52,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
                 final Uri imageUri = imageReturnedIntent.getData();
                 final InputStream imageStream = getContentResolver().openInputStream(imageUri);
                 final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                bitmapToCrop = selectedImage;
                 imageView.setImageBitmap(selectedImage);
             } catch (FileNotFoundException ex){
                 ex.printStackTrace();
