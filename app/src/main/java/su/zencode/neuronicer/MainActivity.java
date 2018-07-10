@@ -20,7 +20,7 @@ import java.io.InputStream;
 public class MainActivity extends AppCompatActivity {
 
     private final int loadImage = 1;
-    private static final int BITMAP_TARGET_DIMENSION = 400;
+    private static final int BITMAP_TARGET_DIMENSION = 28;
     private ImageView imageView;
     Bitmap bitmapToCrop;
 
@@ -63,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
                 bw.setText("Array lenght: "+pixels.length);
                 bw.setGravity(Gravity.CENTER,0,0);
                 bw.show();
+
+                bitmapToCrop.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+                Bitmap newBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
+                newBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+                imageView.setImageBitmap(newBitmap);
             }
         });
 
