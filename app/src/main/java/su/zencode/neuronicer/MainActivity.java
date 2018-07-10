@@ -7,10 +7,12 @@ import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -18,7 +20,7 @@ import java.io.InputStream;
 public class MainActivity extends AppCompatActivity {
 
     private final int loadImage = 1;
-    private static final int BITMAP_TARGET_DIMENSION = 28;
+    private static final int BITMAP_TARGET_DIMENSION = 400;
     private ImageView imageView;
     Bitmap bitmapToCrop;
 
@@ -45,9 +47,22 @@ public class MainActivity extends AppCompatActivity {
         cropImageButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                //int dimension = getSquareCropDimensionForBitmap(bitmapToCrop);
                 bitmapToCrop = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
                 imageView.setImageBitmap(bitmapToCrop);
+
+                int bitmapWidth = bitmapToCrop.getWidth();
+                Toast bw = Toast.makeText(getApplicationContext(),"Width: "+bitmapWidth,Toast.LENGTH_SHORT);
+                bw.setGravity(Gravity.TOP,0,0);
+                bw.show();
+                int bitmapHeight = bitmapToCrop.getHeight();
+                Toast bh = Toast.makeText(getApplicationContext(),"Height: "+bitmapHeight,Toast.LENGTH_SHORT);
+                bh.setGravity(Gravity.TOP,0,200);
+                bh.show();
+
+                int[] pixels = new int[bitmapWidth * bitmapHeight];
+                bw.setText("Array lenght: "+pixels.length);
+                bw.setGravity(Gravity.CENTER,0,0);
+                bw.show();
             }
         });
 
