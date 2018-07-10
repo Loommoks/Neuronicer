@@ -18,16 +18,25 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
-
+    public static final String NETWORK_CODE = "net";
     private final int loadImage = 1;
     private static final int BITMAP_TARGET_DIMENSION = 28;
     private ImageView imageView;
     Bitmap bitmapToCrop;
+    Network net;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        //InputStream inputStream = getResources().openRawResource(R.raw.network980);
+        //Intent netLoadIntent = new Intent(this,AndroidNetworkLoader.class);
+        //startActivity(netLoadIntent);
+        //AndroidNetworkLoader loadNetwork = new LoadNetwork();
+        //net = loadNetwork.go(inputStream);
+
 
         imageView = (ImageView) findViewById(R.id.image_view);
 
@@ -92,4 +101,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
 }
