@@ -67,5 +67,10 @@ public class MainActivity extends AppCompatActivity {
                 ex.printStackTrace();
             }
         }
+
+        if (requestCode == CAMERA_REQUEST && resultCode == RESULT_OK){
+            Bitmap tumbnailBitmap = (Bitmap) imageReturnedIntent.getExtras().get("data");
+            imageView.setImageBitmap(tumbnailBitmap);
+        }
     }
 }
