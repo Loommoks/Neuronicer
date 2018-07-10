@@ -1,5 +1,6 @@
 package su.zencode.neuronicer;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedList;
 
@@ -8,7 +9,7 @@ import su.zencode.neuronicer.Neurons.InNeuron;
 import su.zencode.neuronicer.Neurons.NeuronBase;
 
 
-public class Network {
+public class Network implements Serializable{
     NeuronBase[][] neuronNet;
     double[][] sigmaTemp;
     double[][] sigmaFull;

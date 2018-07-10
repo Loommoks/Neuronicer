@@ -16,7 +16,7 @@ public class AndroidNetworkLoader extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_android_network_loader);
         readAFile();
     }
 
@@ -85,6 +85,7 @@ public class AndroidNetworkLoader extends Activity {
         Toast.makeText(this, "Network just loaded", Toast.LENGTH_SHORT).show();
         Intent networkLoadedIntent = new Intent(this,MainActivity.class);
         //networkLoadedIntent.putExtra(MainActivity.NETWORK_CODE,net);
+        startActivity(networkLoadedIntent);
 
     }
 
