@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Neuronicer</string>
-    <string name="load_image">Load Image</string>
-    <string name="take_picture">Take Picture</string>
+    <string name="load_image_button">Load Image</string>
+    <string name="take_picture_button">Take Picture</string>
+    <string name="crop_button">Crop to Square</string>
+    <string name="loader_label">Loading Network...</string>
 </resources>
