@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private final int loadImage = 1;
     private static final int BITMAP_TARGET_DIMENSION = 28;
     private ImageView imageView;
+    private ImageView thumbnailImageView;
     Bitmap bitmapToCrop;
     Network net;
 
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         imageView = (ImageView) findViewById(R.id.image_view);
+        thumbnailImageView = (ImageView) findViewById(R.id.image_thumbnail);
 
         Button loadImageButton = (Button) findViewById(R.id.load_image_button);
         loadImageButton.setOnClickListener(new OnClickListener() {
@@ -55,35 +57,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button cropImageButton = (Button) findViewById(R.id.crop_button);
-        cropImageButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                bitmapToCrop = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
-                imageView.setImageBitmap(bitmapToCrop);
-
-                int bitmapWidth = bitmapToCrop.getWidth();
-                Toast bw = Toast.makeText(getApplicationContext(),"Width: "+bitmapWidth,Toast.LENGTH_SHORT);
-                bw.setGravity(Gravity.TOP,0,0);
-                bw.show();
-                int bitmapHeight = bitmapToCrop.getHeight();
-                Toast bh = Toast.makeText(getApplicationContext(),"Height: "+bitmapHeight,Toast.LENGTH_SHORT);
-                bh.setGravity(Gravity.TOP,0,200);
-                bh.show();
-
-                int[] pixels = new int[bitmapWidth * bitmapHeight];
-                bw.setText("Array lenght: "+pixels.length);
-                bw.setGravity(Gravity.CENTER,0,0);
-                bw.show();
-
-                bitmapToCrop.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
-                Bitmap newBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
-                newBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
-                imageView.setImageBitmap(newBitmap);
-            }
-        });
-
-        
+               
 
     }
 
@@ -99,10 +73,36 @@ public class MainActivity extends AppCompatActivity {
                 final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
                 bitmapToCrop = selectedImage;
                 imageView.setImageBitmap(selectedImage);
+                cropImage();
+
             } catch (FileNotFoundException ex){
                 ex.printStackTrace();
             }
         }
+    }
+
+    public void cropImage (){
+        bitmapToCrop = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
+        thumbnailImageView.setImageBitmap(bitmapToCrop);
+
+        int bitmapWidth = bitmapToCrop.getWidth();
+        Toast bw = Toast.makeText(getApplicationContext(),"Width: "+bitmapWidth,Toast.LENGTH_SHORT);
+        bw.setGravity(Gravity.TOP,0,0);
+        bw.show();
+        int bitmapHeight = bitmapToCrop.getHeight();
+        Toast bh = Toast.makeText(getApplicationContext(),"Height: "+bitmapHeight,Toast.LENGTH_SHORT);
+        bh.setGravity(Gravity.TOP,0,200);
+        bh.show();
+
+        int[] pixels = new int[bitmapWidth * bitmapHeight];
+        bw.setText("Array lenght: "+pixels.length);
+        bw.setGravity(Gravity.CENTER,0,0);
+        bw.show();
+
+        bitmapToCrop.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+        Bitmap newBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
+        newBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+        //imageView.setImageBitmap(newBitmap);
     }
 
     public void readAFile() {
