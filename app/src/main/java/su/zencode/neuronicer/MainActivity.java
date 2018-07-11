@@ -3,6 +3,7 @@ package su.zencode.neuronicer;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
@@ -25,7 +26,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int BITMAP_TARGET_DIMENSION = 28;
     private ImageView imageView;
     private ImageView thumbnailImageView;
+    private ImageView grayScaleImageView;
+
     Bitmap bitmapToCrop;
+    Bitmap croppedBitmap;
+    Bitmap grayscaleBitmap;
     Network net;
 
     @Override
@@ -44,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
         imageView = (ImageView) findViewById(R.id.image_view);
         thumbnailImageView = (ImageView) findViewById(R.id.image_thumbnail);
+        grayScaleImageView = (ImageView) findViewById(R.id.grayscale_image_thumbnail);
 
         Button loadImageButton = (Button) findViewById(R.id.load_image_button);
         loadImageButton.setOnClickListener(new OnClickListener() {
@@ -57,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-               
+
 
     }
 
@@ -74,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
                 bitmapToCrop = selectedImage;
                 imageView.setImageBitmap(selectedImage);
                 cropImage();
+                grayscaleImage();
 
             } catch (FileNotFoundException ex){
                 ex.printStackTrace();
@@ -82,14 +89,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void cropImage (){
-        bitmapToCrop = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
-        thumbnailImageView.setImageBitmap(bitmapToCrop);
+        croppedBitmap = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
+        thumbnailImageView.setImageBitmap(croppedBitmap);
+        //grayScaleImageView.setImageBitmap(croppedBitmap);
 
-        int bitmapWidth = bitmapToCrop.getWidth();
+        int bitmapWidth = croppedBitmap.getWidth();
         Toast bw = Toast.makeText(getApplicationContext(),"Width: "+bitmapWidth,Toast.LENGTH_SHORT);
         bw.setGravity(Gravity.TOP,0,0);
         bw.show();
-        int bitmapHeight = bitmapToCrop.getHeight();
+        int bitmapHeight = croppedBitmap.getHeight();
         Toast bh = Toast.makeText(getApplicationContext(),"Height: "+bitmapHeight,Toast.LENGTH_SHORT);
         bh.setGravity(Gravity.TOP,0,200);
         bh.show();
@@ -99,10 +107,39 @@ public class MainActivity extends AppCompatActivity {
         bw.setGravity(Gravity.CENTER,0,0);
         bw.show();
 
-        bitmapToCrop.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+        croppedBitmap.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         Bitmap newBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
         newBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
-        //imageView.setImageBitmap(newBitmap);
+        //grayScaleImageView.setImageBitmap(newBitmap);
+    }
+
+    public void grayscaleImage(){
+        int bitmapWidth = croppedBitmap.getWidth();
+        int bitmapHeight = croppedBitmap.getHeight();
+        int[] pixels = new int[ bitmapHeight * bitmapWidth ];
+        int pixel;
+        croppedBitmap.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+        Toast.makeText(this, ""+Color.alpha(pixels[0])+" "+Color.red(pixels[0])+" "+Color.green(pixels[0])+" "+Color.blue(pixels[0]), Toast.LENGTH_SHORT).show();
+
+
+
+        grayscaleBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
+        for(int i=0; i<bitmapWidth;i++){
+            for (int j=0;j<bitmapHeight;j++){
+                pixel = (
+                        Color.red(grayscaleBitmap.getPixel(i,j))
+                                +Color.green(grayscaleBitmap.getPixel(i,j))
+                                +Color.blue(grayscaleBitmap.getPixel(i,j))
+                )/3;
+                //pixel = Color.blue(pixels[i])*1000;
+                //pixels[i]=;
+                grayscaleBitmap.setPixel(i,j,Color.argb(0,pixel,pixel,pixel));
+            }
+        }
+
+        //grayscaleBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
+        grayScaleImageView.setImageBitmap(grayscaleBitmap);
+
     }
 
     public void readAFile() {
