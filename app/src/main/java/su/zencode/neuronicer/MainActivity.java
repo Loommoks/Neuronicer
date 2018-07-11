@@ -14,8 +14,10 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class MainActivity extends AppCompatActivity {
     public static final String NETWORK_CODE = "net";
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         //startActivity(netLoadIntent);
         //AndroidNetworkLoader loadNetwork = new LoadNetwork();
         //net = loadNetwork.go(inputStream);
+        readAFile();
 
 
         imageView = (ImageView) findViewById(R.id.image_view);
@@ -100,6 +103,29 @@ public class MainActivity extends AppCompatActivity {
                 ex.printStackTrace();
             }
         }
+    }
+
+    public void readAFile() {
+        try {
+
+            InputStream inputStream = getResources().openRawResource(R.raw.network980);
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader reader = new BufferedReader(inputStreamReader);
+
+            LinesConvertor linesConvertor = new LinesConvertor();
+            String lineToConvert;
+            while ((lineToConvert = reader.readLine()) !=null){
+                linesConvertor.readALine(lineToConvert);
+            }
+            reader.close();
+            net = linesConvertor.getNet();
+            Toast.makeText(this,"Dimensions: " +net.getNetworkDimension()[0], Toast.LENGTH_LONG).show();
+
+
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
+
     }
 
 }

@@ -1,34 +1,17 @@
 package su.zencode.neuronicer;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.os.Bundle;
-import android.widget.Toast;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
-public class AndroidNetworkLoader extends Activity {
+public class LinesConvertor {
     protected Network net;
     protected int[] neuronsInLayers;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_android_network_loader);
-        readAFile();
+    public Network getNet() {
+        return net;
     }
 
-    public void readAFile() {
-        try {
+    public void readALine(String lineToConvert) {
 
-            InputStream inputStream = getResources().openRawResource(R.raw.network980);
-            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-            BufferedReader reader = new BufferedReader(inputStreamReader);
-
-            String lineToConvert;
-            while ((lineToConvert = reader.readLine()) !=null){
+            //String lineToConvert;
+            if (lineToConvert !=null){
 
                 String[] separated = lineToConvert.split("/");
 
@@ -76,16 +59,7 @@ public class AndroidNetworkLoader extends Activity {
                 }
 
             }
-            reader.close();
 
-        } catch (Exception ex){
-            ex.printStackTrace();
-        }
-
-        Toast.makeText(this, "Network just loaded", Toast.LENGTH_SHORT).show();
-        Intent networkLoadedIntent = new Intent(this,MainActivity.class);
-        //networkLoadedIntent.putExtra(MainActivity.NETWORK_CODE,net);
-        startActivity(networkLoadedIntent);
 
     }
 
