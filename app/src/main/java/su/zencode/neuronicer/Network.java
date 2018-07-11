@@ -194,6 +194,29 @@ public class Network implements Serializable{
 
     }
 
+    public int startAndroidNetworking(double in[]){
+        startNetworking(in);
+        int lastLayerNumber = neuronNet.length-1;
+        int neuronsInLastLayer = neuronNet[lastLayerNumber].length;
+        double[] result = new double[neuronsInLastLayer];
+        int counter=0;
+        //int answerIndex=100;
+        boolean answerIsRight = false;
+        int rightAnswer=-1;
+        double maxPossibilityAnswer=0;
+        int index=0;
+        for (int j=0; j<neuronsInLastLayer;j++){
+            result[j]=neuronNet[lastLayerNumber][j].getOut();
+            System.out.println("вероятность, что ответ ["+j+"]: "+result[j]);
+            if(result[j]>maxPossibilityAnswer){
+                maxPossibilityAnswer=result[j];
+                index=j;
+            }
+            //System.out.println("Out ["+j+"]: "+result[j]);
+        }
+        return index;
+    }
+
     public void transferSingnal(int x, int y){
         if (x>=neuronNet.length){System.out.print("Network layer exceeded");}
         else {

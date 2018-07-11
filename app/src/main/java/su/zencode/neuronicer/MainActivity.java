@@ -96,11 +96,11 @@ public class MainActivity extends AppCompatActivity {
         int bitmapWidth = croppedBitmap.getWidth();
         Toast bw = Toast.makeText(getApplicationContext(),"Width: "+bitmapWidth,Toast.LENGTH_SHORT);
         bw.setGravity(Gravity.TOP,0,0);
-        bw.show();
+        //bw.show();
         int bitmapHeight = croppedBitmap.getHeight();
         Toast bh = Toast.makeText(getApplicationContext(),"Height: "+bitmapHeight,Toast.LENGTH_SHORT);
         bh.setGravity(Gravity.TOP,0,200);
-        bh.show();
+        //bh.show();
 
         int[] pixels = new int[bitmapWidth * bitmapHeight];
         bw.setText("Array lenght: "+pixels.length);
@@ -117,13 +117,14 @@ public class MainActivity extends AppCompatActivity {
         int bitmapWidth = croppedBitmap.getWidth();
         int bitmapHeight = croppedBitmap.getHeight();
         int[] pixels = new int[ bitmapHeight * bitmapWidth ];
+        double[] inputForNetwork = new double[bitmapHeight * bitmapWidth];
         final double GS_RED = 0.299;
         final double GS_GREEN = 0.587;
         final double GS_BLUE = 0.114;
         int A, R, G, B;
         int pixel;
         croppedBitmap.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
-        Toast.makeText(this, ""+Color.alpha(pixels[0])+" "+Color.red(pixels[0])+" "+Color.green(pixels[0])+" "+Color.blue(pixels[0]), Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, ""+Color.alpha(pixels[0])+" "+Color.red(pixels[0])+" "+Color.green(pixels[0])+" "+Color.blue(pixels[0]), Toast.LENGTH_SHORT).show();
 
 
 
@@ -135,13 +136,27 @@ public class MainActivity extends AppCompatActivity {
                                 +Color.blue(croppedBitmap.getPixel(i,j))
                 )/3;
                 //pixel = Color.blue(pixels[i])*1000;
-                //pixels[i]=;
+                //inputForNetwork[i+j] = (255-pixel)/255;
                 grayscaleBitmap.setPixel(i,j,Color.argb(255,pixel,pixel,pixel));
+            }
+        }
+
+        for(int y=0; y<bitmapHeight;y++){
+            for (int x=0;x<bitmapWidth;x++){
+                pixel = (Color.red(grayscaleBitmap.getPixel(x,y))
+                        +Color.green(grayscaleBitmap.getPixel(x,y))
+                        +Color.blue(grayscaleBitmap.getPixel(x,y))
+                )/3;
+                //pixel = Color.blue(pixels[i])*1000;
+                inputForNetwork[y+x] = 255-pixel;
             }
         }
 
         //grayscaleBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         grayScaleImageView.setImageBitmap(grayscaleBitmap);
+        int answer = net.startAndroidNetworking(inputForNetwork);
+        System.out.println(answer);
+        Toast.makeText(this, ""+answer, Toast.LENGTH_LONG).show();
 
     }
 
