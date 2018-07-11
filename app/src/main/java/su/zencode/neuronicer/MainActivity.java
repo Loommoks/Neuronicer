@@ -117,6 +117,10 @@ public class MainActivity extends AppCompatActivity {
         int bitmapWidth = croppedBitmap.getWidth();
         int bitmapHeight = croppedBitmap.getHeight();
         int[] pixels = new int[ bitmapHeight * bitmapWidth ];
+        final double GS_RED = 0.299;
+        final double GS_GREEN = 0.587;
+        final double GS_BLUE = 0.114;
+        int A, R, G, B;
         int pixel;
         croppedBitmap.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         Toast.makeText(this, ""+Color.alpha(pixels[0])+" "+Color.red(pixels[0])+" "+Color.green(pixels[0])+" "+Color.blue(pixels[0]), Toast.LENGTH_SHORT).show();
@@ -126,14 +130,13 @@ public class MainActivity extends AppCompatActivity {
         grayscaleBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
         for(int i=0; i<bitmapWidth;i++){
             for (int j=0;j<bitmapHeight;j++){
-                pixel = (
-                        Color.red(grayscaleBitmap.getPixel(i,j))
-                                +Color.green(grayscaleBitmap.getPixel(i,j))
-                                +Color.blue(grayscaleBitmap.getPixel(i,j))
+                pixel = (Color.red(croppedBitmap.getPixel(i,j))
+                                +Color.green(croppedBitmap.getPixel(i,j))
+                                +Color.blue(croppedBitmap.getPixel(i,j))
                 )/3;
                 //pixel = Color.blue(pixels[i])*1000;
                 //pixels[i]=;
-                grayscaleBitmap.setPixel(i,j,Color.argb(0,pixel,pixel,pixel));
+                grayscaleBitmap.setPixel(i,j,Color.argb(255,pixel,pixel,pixel));
             }
         }
 
