@@ -4,11 +4,13 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.SurfaceTexture;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
+import android.view.TextureView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -27,6 +29,11 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageView;
     private ImageView thumbnailImageView;
     private ImageView grayScaleImageView;
+    private TextureView videoView;
+
+    Button loadImageButton;
+    Button videoCaptureButton;
+    Button takePictureButton;
 
     Bitmap bitmapToCrop;
     Bitmap croppedBitmap;
@@ -48,13 +55,16 @@ public class MainActivity extends AppCompatActivity {
 
 
         imageView = (ImageView) findViewById(R.id.image_view);
+        videoView = (TextureView) findViewById(R.id.texture_view);
         thumbnailImageView = (ImageView) findViewById(R.id.image_thumbnail);
         grayScaleImageView = (ImageView) findViewById(R.id.grayscale_image_thumbnail);
 
-        Button loadImageButton = (Button) findViewById(R.id.load_image_button);
+        loadImageButton = (Button) findViewById(R.id.load_image_button);
         loadImageButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                videoView.setVisibility(View.INVISIBLE);
+                imageView.setVisibility(View.VISIBLE);
                 Intent loadImageIntent = new Intent(Intent.ACTION_PICK);
 
                 loadImageIntent.setType("image/*");
@@ -64,6 +74,54 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        assert videoView != null;
+        videoView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                openCamera();
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+            }
+        });
+
+        videoCaptureButton = (Button) findViewById(R.id.capture_video);
+        videoCaptureButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                imageView.setVisibility(View.INVISIBLE);
+                videoView.setVisibility(View.VISIBLE);
+            }
+        });
+
+        takePictureButton = (Button) findViewById(R.id.take_picture);
+        takePictureButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                takePicture();
+            }
+        });
+
+
+    }
+
+    private void takePicture() {
+
+    }
+
+    private void openCamera() {
 
     }
 
