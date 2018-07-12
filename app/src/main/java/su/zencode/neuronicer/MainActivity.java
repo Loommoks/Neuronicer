@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         int[] pixels = new int[bitmapWidth * bitmapHeight];
         bw.setText("Array lenght: "+pixels.length);
         bw.setGravity(Gravity.CENTER,0,0);
-        bw.show();
+        //bw.show();
 
         croppedBitmap.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         Bitmap newBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
@@ -125,22 +125,60 @@ public class MainActivity extends AppCompatActivity {
         int pixel;
         croppedBitmap.getPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         //Toast.makeText(this, ""+Color.alpha(pixels[0])+" "+Color.red(pixels[0])+" "+Color.green(pixels[0])+" "+Color.blue(pixels[0]), Toast.LENGTH_SHORT).show();
-
-
-
+        int colorMiddle =0;
         grayscaleBitmap = Bitmap.createBitmap(bitmapWidth,bitmapHeight, Bitmap.Config.ARGB_8888);
-        for(int i=0; i<bitmapWidth;i++){
-            for (int j=0;j<bitmapHeight;j++){
-                pixel = (Color.red(croppedBitmap.getPixel(i,j))
-                                +Color.green(croppedBitmap.getPixel(i,j))
-                                +Color.blue(croppedBitmap.getPixel(i,j))
-                )/3;
-                //pixel = Color.blue(pixels[i])*1000;
-                //inputForNetwork[i+j] = (255-pixel)/255;
-                grayscaleBitmap.setPixel(i,j,Color.argb(255,pixel,pixel,pixel));
+
+        for(int i=0; i<bitmapWidth;i++) {
+            for (int j = 0; j < bitmapHeight; j++) {
+
+                //***
+                pixel = croppedBitmap.getPixel(i, j);
+                // retrieve color of all channels
+                A = Color.alpha(pixel);
+                R = Color.red(pixel);
+                G = Color.green(pixel);
+                B = Color.blue(pixel);
+                colorMiddle = colorMiddle + (+R + G + B) / 3;
             }
         }
+        colorMiddle=colorMiddle/748;
 
+                for(int i=0; i<bitmapWidth;i++){
+            for (int j=0;j<bitmapHeight;j++){
+
+                //***
+                pixel = croppedBitmap.getPixel(i, j);
+                // retrieve color of all channels
+                A = Color.alpha(pixel);
+                R = Color.red(pixel);
+                G = Color.green(pixel);
+                B = Color.blue(pixel);
+                //colorMiddle = colorMiddle+(+R+G+B)/3;
+                // take conversion up to one single value
+                R = G = B = (int)(GS_RED * R + GS_GREEN * G + GS_BLUE * B);
+
+                // set new pixel color to output bitmap
+                if (R>colorMiddle*0.87){
+                    inputForNetwork[i+j*28] = 0;
+                    grayscaleBitmap.setPixel(i,j,Color.argb(255,255,255,255));
+                } else {
+                    inputForNetwork[i+j*28] = 255;
+                grayscaleBitmap.setPixel(i, j, Color.argb(255, 0, 0, 0));
+                }
+                //***
+
+                /*pixel = (Color.red(croppedBitmap.getPixel(i,j))
+                                +Color.green(croppedBitmap.getPixel(i,j))
+                                +Color.blue(croppedBitmap.getPixel(i,j))
+                )/3;*/
+                //pixel = Color.blue(pixels[i])*1000;
+                //inputForNetwork[i+j*27] = 255-R;
+                //grayscaleBitmap.setPixel(i,j,Color.argb(255,pixel,pixel,pixel));
+            }
+        }
+        //colorMiddle=colorMiddle/748;
+        System.out.println("Среднее значение цвета: "+colorMiddle);
+        /*
         for(int y=0; y<bitmapHeight;y++){
             for (int x=0;x<bitmapWidth;x++){
                 pixel = (Color.red(grayscaleBitmap.getPixel(x,y))
@@ -148,14 +186,16 @@ public class MainActivity extends AppCompatActivity {
                         +Color.blue(grayscaleBitmap.getPixel(x,y))
                 )/3;
                 //pixel = Color.blue(pixels[i])*1000;
-                inputForNetwork[y+x] = 255-pixel;
+                inputForNetwork[y*28+x] = 255-pixel;
+                System.out.println("Пиксель ["+(y*28+x)+"] = "+inputForNetwork[y*28+x]);
             }
-        }
+        }*/
 
         //grayscaleBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         grayScaleImageView.setImageBitmap(grayscaleBitmap);
         int answer = net.startAndroidNetworking(inputForNetwork);
         System.out.println(answer);
+        //net.showNetworkData();
         Toast.makeText(this, ""+answer, Toast.LENGTH_LONG).show();
 
     }
@@ -163,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
     public void readAFile() {
         try {
 
-            InputStream inputStream = getResources().openRawResource(R.raw.network980);
+            InputStream inputStream = getResources().openRawResource(R.raw.network995);
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader reader = new BufferedReader(inputStreamReader);
 

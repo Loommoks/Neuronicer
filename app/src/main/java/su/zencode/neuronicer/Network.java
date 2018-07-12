@@ -80,7 +80,7 @@ public class Network implements Serializable{
                 System.out.print("Выход:" +neuronNet[il][jninl].getOut()+"  ");
                 double[] wMassive= neuronNet[il][jninl].getInputWeight();
                 for (int k=0;k<wMassive.length;k++){
-                    System.out.print("Вес["+k+"]: " +wMassive[k]+"  ");
+                    //System.out.print("Вес["+k+"]: " +wMassive[k]+"  ");
                 }
                 System.out.println("");
             }
@@ -195,6 +195,9 @@ public class Network implements Serializable{
     }
 
     public int startAndroidNetworking(double in[]){
+        for(int i=0;i<in.length;i++){
+            //System.out.println("Input ["+i+"]: "+in[i]);
+        }
         startNetworking(in);
         int lastLayerNumber = neuronNet.length-1;
         int neuronsInLastLayer = neuronNet[lastLayerNumber].length;
