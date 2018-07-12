@@ -195,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        startBackgroundThread();
 
         if(mTextureView.isAvailable()){
             setupCamera(mTextureView.getWidth(),mTextureView.getHeight());
@@ -206,6 +207,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         closeCamera();
+        stopBackgroundThread();
         super.onPause();
     }
 
@@ -380,6 +382,24 @@ public class MainActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
 
+    }
+
+    private void startBackgroundThread() {
+        mBackgroungHandlerThread = new HandlerThread("Camera2VideoStream");
+        mBackgroungHandlerThread.start();
+        mBackgroundHandler = new Handler(mBackgroungHandlerThread.getLooper());
+
+    }
+
+    private void stopBackgroundThread() {
+        mBackgroungHandlerThread.quitSafely();
+        try {
+            mBackgroungHandlerThread.join();
+            mBackgroungHandlerThread = null;
+            mBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 }
