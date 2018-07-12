@@ -1,13 +1,21 @@
 package su.zencode.neuronicer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.TextureView;
@@ -29,7 +37,51 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageView;
     private ImageView thumbnailImageView;
     private ImageView grayScaleImageView;
-    private TextureView videoView;
+    private TextureView mTextureView;
+    private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
+            setupCamera(width, height);
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
+
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+            return false;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+        }
+    };
+    private CameraDevice mCameraDevice;
+    private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(@NonNull CameraDevice cameraDevice) {
+            mCameraDevice = cameraDevice;
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+            cameraDevice.close();
+            mCameraDevice = null;
+        }
+
+        @Override
+        public void onError(@NonNull CameraDevice cameraDevice, int i) {
+            cameraDevice.close();
+            mCameraDevice = null;
+        }
+    };
+
+    private HandlerThread mBackgroungHandlerThread;
+    private Handler mBackgroundHandler;
+    private String mCameraId;
 
     Button loadImageButton;
     Button videoCaptureButton;
@@ -39,6 +91,29 @@ public class MainActivity extends AppCompatActivity {
     Bitmap croppedBitmap;
     Bitmap grayscaleBitmap;
     Network net;
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus){
+        super.onWindowFocusChanged(hasFocus);
+        View decorView = getWindow().getDecorView();
+        if(hasFocus){
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            );
+        }
+    }
+
+    private void closeCamera() {
+        if (mCameraDevice!=null){
+            mCameraDevice.close();
+            mCameraDevice = null;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         imageView = (ImageView) findViewById(R.id.image_view);
-        videoView = (TextureView) findViewById(R.id.texture_view);
+        mTextureView = (TextureView) findViewById(R.id.texture_view);
         thumbnailImageView = (ImageView) findViewById(R.id.image_thumbnail);
         grayScaleImageView = (ImageView) findViewById(R.id.grayscale_image_thumbnail);
 
@@ -63,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         loadImageButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                videoView.setVisibility(View.INVISIBLE);
+                mTextureView.setVisibility(View.INVISIBLE);
                 imageView.setVisibility(View.VISIBLE);
                 Intent loadImageIntent = new Intent(Intent.ACTION_PICK);
 
@@ -74,8 +149,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        assert videoView != null;
-        videoView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+        // assert mTextureView != null;
+        /*mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
                 openCamera();
@@ -95,14 +170,14 @@ public class MainActivity extends AppCompatActivity {
             public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
             }
-        });
+        });*/
 
         videoCaptureButton = (Button) findViewById(R.id.capture_video);
         videoCaptureButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 imageView.setVisibility(View.INVISIBLE);
-                videoView.setVisibility(View.VISIBLE);
+                mTextureView.setVisibility(View.VISIBLE);
             }
         });
 
@@ -110,19 +185,28 @@ public class MainActivity extends AppCompatActivity {
         takePictureButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                takePicture();
+                //takePicture();
             }
         });
 
 
     }
 
-    private void takePicture() {
+    @Override
+    protected void onResume() {
+        super.onResume();
 
+        if(mTextureView.isAvailable()){
+            setupCamera(mTextureView.getWidth(),mTextureView.getHeight());
+        } else {
+            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        }
     }
 
-    private void openCamera() {
-
+    @Override
+    protected void onPause() {
+        closeCamera();
+        super.onPause();
     }
 
     @Override
@@ -143,6 +227,23 @@ public class MainActivity extends AppCompatActivity {
             } catch (FileNotFoundException ex){
                 ex.printStackTrace();
             }
+        }
+    }
+
+    private void setupCamera(int width, int height){
+        CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        try {
+            for (String cameraId : cameraManager.getCameraIdList()){
+                CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+                if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
+                        CameraCharacteristics.LENS_FACING_FRONT){
+                    continue;
+                }
+                mCameraId = cameraId;
+                return;
+            }
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
     }
 
@@ -216,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
                 R = G = B = (int)(GS_RED * R + GS_GREEN * G + GS_BLUE * B);
 
                 // set new pixel color to output bitmap
-                if (R>colorMiddle*0.87){
+                if (R>colorMiddle*0.85){
                     inputForNetwork[i+j*28] = 0;
                     grayscaleBitmap.setPixel(i,j,Color.argb(255,255,255,255));
                 } else {
