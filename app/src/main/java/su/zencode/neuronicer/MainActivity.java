@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -14,7 +15,11 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.ImageReader;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
@@ -32,6 +37,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -39,6 +45,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
     private final int loadImage = 1;
     private static final int REQUEST_CAMERA_PERMISSION_CODE = 0;
     private static final int BITMAP_TARGET_DIMENSION = 28;
+    private static final int STATE_PREVIEW = 0;
+    private static final int STATE_WAIT_LOCK = 1;
+    private int mCaptureState = STATE_PREVIEW;
     private ImageView imageView;
     private ImageView thumbnailImageView;
     private ImageView grayScaleImageView;
@@ -104,7 +114,64 @@ public class MainActivity extends AppCompatActivity {
     private Handler mBackgroundHandler;
     private String mCameraId;
     private Size mPreviewSize;
+    private Size mImageSize;
+    private ImageReader mImageReader;
+    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new
+            ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader imageReader) {
+                    mBackgroundHandler.post(new ImageSaver(imageReader.acquireLatestImage()));
+                }
+            };
+    private class ImageSaver implements Runnable {
+
+        private final Image mImage;
+
+        public ImageSaver(Image image) {
+            mImage = image;
+        }
+
+        @Override
+        public void run() {
+            ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+
+        }
+    }
+
+    private CameraCaptureSession mPreviewCaptureSession;
+    private CameraCaptureSession.CaptureCallback mPreviewCaptureCallback = new
+            CameraCaptureSession.CaptureCallback() {
+                private void process(CaptureResult captureResult){
+                    switch (mCaptureState) {
+                        case STATE_PREVIEW:
+                            //Ничего не делает, todo рассмотреть механизм
+                            break;
+                        case STATE_WAIT_LOCK:
+                            mCaptureState = STATE_PREVIEW;
+                            Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
+                            if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                                    afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                                Toast.makeText(getApplicationContext(),"AF locked", Toast.LENGTH_SHORT).show();
+                                startStillCaptureRequest();
+                            }
+
+                            break;
+                    }
+                }
+                @Override
+                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                    super.onCaptureCompleted(session, request, result);
+
+                    process(result);
+                }
+            };
     private CaptureRequest.Builder mCaptureRequestBuilder;
+
+    private ImageButton mRecordImageButton;
+    private boolean mIsRecording = false;
+
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
     static {
         ORIENTATIONS.append(Surface.ROTATION_0,0);
@@ -116,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
     Button loadImageButton;
     Button videoCaptureButton;
     Button takePictureButton;
+    private ImageButton mStillImageButton;
 
     Bitmap bitmapToCrop;
     Bitmap croppedBitmap;
@@ -167,8 +235,29 @@ public class MainActivity extends AppCompatActivity {
         readAFile();
 
 
+        mRecordImageButton = (ImageButton) findViewById(R.id.videoOnLineImageButton);
+        mRecordImageButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mIsRecording) {
+                    mIsRecording = false;
+                    mRecordImageButton.setImageResource(R.drawable.baseline_videocam_off_black_24dp);
+                } else {
+                    mIsRecording = true;
+                    mRecordImageButton.setImageResource(R.drawable.baseline_videocam_black_24dp);
+                }
+            }
+        });
+
         imageView = (ImageView) findViewById(R.id.image_view);
         mTextureView = (TextureView) findViewById(R.id.texture_view);
+        mStillImageButton = (ImageButton) findViewById(R.id.cameraImageButton2);
+        mStillImageButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                lockFocus();
+            }
+        });
         thumbnailImageView = (ImageView) findViewById(R.id.image_thumbnail);
         grayScaleImageView = (ImageView) findViewById(R.id.grayscale_image_thumbnail);
 
@@ -178,6 +267,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 mTextureView.setVisibility(View.INVISIBLE);
                 imageView.setVisibility(View.VISIBLE);
+                mRecordImageButton.setVisibility(View.INVISIBLE);
+                mStillImageButton.setVisibility(View.INVISIBLE);
                 Intent loadImageIntent = new Intent(Intent.ACTION_PICK);
 
                 loadImageIntent.setType("image/*");
@@ -216,6 +307,9 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 imageView.setVisibility(View.INVISIBLE);
                 mTextureView.setVisibility(View.VISIBLE);
+                mRecordImageButton.setVisibility(View.VISIBLE);
+                mStillImageButton.setVisibility(View.VISIBLE);
+
             }
         });
 
@@ -301,6 +395,9 @@ public class MainActivity extends AppCompatActivity {
                     rotatedHeight = width;
                 }
                 mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), rotatedWidth,rotatedHeight);
+                mImageSize = chooseOptimalSize(map.getOutputSizes(ImageFormat.JPEG), rotatedWidth,rotatedHeight);
+                mImageReader = ImageReader.newInstance(mImageSize.getWidth(),mImageSize.getHeight(), ImageFormat.JPEG,1);
+                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
                 mCameraId = cameraId;
                 return;
             }
@@ -344,12 +441,13 @@ public class MainActivity extends AppCompatActivity {
             mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mCaptureRequestBuilder.addTarget(previewSurface);
 
-            mCameraDevice.createCaptureSession(Arrays.asList(previewSurface),
+            mCameraDevice.createCaptureSession(Arrays.asList(previewSurface, mImageReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                            mPreviewCaptureSession = cameraCaptureSession;
                             try {
-                                cameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
+                                mPreviewCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                                         null, mBackgroundHandler);
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
@@ -361,6 +459,25 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(getApplicationContext(), "Something goes wrong :( Can't setup camera preview)", Toast.LENGTH_SHORT).show();
                         }
                     }, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void startStillCaptureRequest() {
+        try {
+            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+
+            CameraCaptureSession.CaptureCallback stillCaptureCallback = new
+                    CameraCaptureSession.CaptureCallback() {
+                        @Override
+                        public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
+                            super.onCaptureStarted(session, request, timestamp, frameNumber);
+                            //todo здесь можно создать файл/директория, если мы хотим сохранить изображение (!пока не нужно!)
+                        }
+                    };
+            mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), stillCaptureCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -539,6 +656,16 @@ public class MainActivity extends AppCompatActivity {
             return Collections.min(bigEnough,new CompareSizeByArea());
         } else {
             return choices[0];
+        }
+    }
+
+    private void lockFocus() {
+        mCaptureState = STATE_WAIT_LOCK;
+        mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
+        try {
+            mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), mPreviewCaptureCallback, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
     }
 

@@ -105,5 +105,31 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <ImageButton
+        android:id="@+id/videoOnLineImageButton"
+        android:layout_width="44dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/texture_view"
+        app:srcCompat="@drawable/baseline_videocam_off_black_24dp"
+        android:visibility="invisible"/>
+
+    <ImageButton
+        android:id="@+id/cameraImageButton2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/videoOnLineImageButton"
+        app:srcCompat="@drawable/baseline_camera_enhance_black_24dp"
+        android:visibility="invisible"/>
+
 
 </android.support.constraint.ConstraintLayout>
