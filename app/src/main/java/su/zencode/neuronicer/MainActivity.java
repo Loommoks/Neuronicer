@@ -26,6 +26,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -39,6 +40,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -62,9 +64,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int STATE_PREVIEW = 0;
     private static final int STATE_WAIT_LOCK = 1;
     private int mCaptureState = STATE_PREVIEW;
+    private int answer = 0;
     private ImageView imageView;
     private ImageView thumbnailImageView;
     private ImageView grayScaleImageView;
+    private TextView answerTextView;
     private TextureView mTextureView;
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -112,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
     private HandlerThread mBackgroungHandlerThread;
     private Handler mBackgroundHandler;
+    private Handler handler;
     private String mCameraId;
     private Size mPreviewSize;
     private Size mImageSize;
@@ -120,7 +125,9 @@ public class MainActivity extends AppCompatActivity {
             ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader imageReader) {
-                    mBackgroundHandler.post(new ImageSaver(imageReader.acquireLatestImage()));
+                    //mBackgroundHandler.post(new ImageSaver(imageReader.acquireLatestImage()));
+                    imageByteToBitmapConvertor(imageReader);
+                    lockFocus();
                 }
             };
     private class ImageSaver implements Runnable {
@@ -136,6 +143,9 @@ public class MainActivity extends AppCompatActivity {
             ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[byteBuffer.remaining()];
             byteBuffer.get(bytes);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+            bitmapToCrop = bitmap;
+            //cropImage();
 
         }
     }
@@ -169,8 +179,8 @@ public class MainActivity extends AppCompatActivity {
             };
     private CaptureRequest.Builder mCaptureRequestBuilder;
 
-    private ImageButton mRecordImageButton;
-    private boolean mIsRecording = false;
+    //private ImageButton mRecordImageButton;
+    //private boolean mIsRecording = false;
 
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
     static {
@@ -235,20 +245,7 @@ public class MainActivity extends AppCompatActivity {
         readAFile();
 
 
-        mRecordImageButton = (ImageButton) findViewById(R.id.videoOnLineImageButton);
-        mRecordImageButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mIsRecording) {
-                    mIsRecording = false;
-                    mRecordImageButton.setImageResource(R.drawable.baseline_videocam_off_black_24dp);
-                } else {
-                    mIsRecording = true;
-                    mRecordImageButton.setImageResource(R.drawable.baseline_videocam_black_24dp);
-                }
-            }
-        });
-
+        answerTextView = (TextView) findViewById(R.id.answerTextView);
         imageView = (ImageView) findViewById(R.id.image_view);
         mTextureView = (TextureView) findViewById(R.id.texture_view);
         mStillImageButton = (ImageButton) findViewById(R.id.cameraImageButton2);
@@ -256,6 +253,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 lockFocus();
+                //cropImage();
             }
         });
         thumbnailImageView = (ImageView) findViewById(R.id.image_thumbnail);
@@ -267,8 +265,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 mTextureView.setVisibility(View.INVISIBLE);
                 imageView.setVisibility(View.VISIBLE);
-                mRecordImageButton.setVisibility(View.INVISIBLE);
                 mStillImageButton.setVisibility(View.INVISIBLE);
+                answerTextView.setVisibility(View.INVISIBLE);
                 Intent loadImageIntent = new Intent(Intent.ACTION_PICK);
 
                 loadImageIntent.setType("image/*");
@@ -277,38 +275,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-        // assert mTextureView != null;
-        /*mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                openCamera();
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-            }
-        });*/
-
         videoCaptureButton = (Button) findViewById(R.id.capture_video);
         videoCaptureButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 imageView.setVisibility(View.INVISIBLE);
                 mTextureView.setVisibility(View.VISIBLE);
-                mRecordImageButton.setVisibility(View.VISIBLE);
                 mStillImageButton.setVisibility(View.VISIBLE);
+                answerTextView.setVisibility(View.VISIBLE);
 
             }
         });
@@ -320,6 +294,15 @@ public class MainActivity extends AppCompatActivity {
                 //takePicture();
             }
         });
+
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                cropImage();
+                grayscaleImage();
+                answerTextView.setText(""+answer);
+            }
+        };
 
 
     }
@@ -373,6 +356,11 @@ public class MainActivity extends AppCompatActivity {
                 ex.printStackTrace();
             }
         }
+    }
+
+    private void getCrop() {
+        Message msg = new Message();
+        handler.sendMessage(msg);
     }
 
     private void setupCamera(int width, int height){
@@ -483,6 +471,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void imageByteToBitmapConvertor(ImageReader imageReader) {
+        Image image = null;
+        try {
+            image = imageReader.acquireLatestImage();
+            ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+            bitmapToCrop = bitmap;
+            getCrop();
+            //cropImage();
+        } finally {
+            if (image != null){
+                image.close();
+            }
+        }
+        //Toast.makeText(this, "Entered ImageByteToBitmapConvertor", Toast.LENGTH_SHORT).show();
+        //if(image != null) image.close();
+    }
+
     public void cropImage (){
         croppedBitmap = ThumbnailUtils.extractThumbnail(bitmapToCrop,BITMAP_TARGET_DIMENSION,BITMAP_TARGET_DIMENSION);
         thumbnailImageView.setImageBitmap(croppedBitmap);
@@ -588,10 +596,11 @@ public class MainActivity extends AppCompatActivity {
 
         //grayscaleBitmap.setPixels(pixels,0,bitmapWidth,0,0,bitmapWidth,bitmapHeight);
         grayScaleImageView.setImageBitmap(grayscaleBitmap);
-        int answer = net.startAndroidNetworking(inputForNetwork);
+        answer = net.startAndroidNetworking(inputForNetwork);
+        //answerTextView.setText(answer);
         System.out.println(answer);
         //net.showNetworkData();
-        Toast.makeText(this, ""+answer, Toast.LENGTH_LONG).show();
+        //Toast.makeText(this, ""+answer, Toast.LENGTH_LONG).show();
 
     }
 
